@@ -1,5 +1,5 @@
 # C compiler
-CC = g++
+CC = g++-8
 CC_FLAGS = -fopenmp -O2
 
 prime: 
