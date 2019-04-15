@@ -6,6 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <omp.h>
 
 bool readColMajorMatrixFile(const char *fn, int &nr_row, int &nr_col, std::vector<float>&v)
 {
@@ -101,8 +102,10 @@ int main (int argc, char *argv[]) {
   // allocate space for C
   std::vector<float> matC(matArow*matBcol);
 
+  double wallClock = omp_get_wtime();
   // Use standard sgemm interface
   basicSgemm('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f, &matC.front(), matArow);
+  printf("time_elapsed: %lf\n", omp_get_wtime() - wallClock);
 
   writeColMajorMatrixFile(argv[3], matArow, matBcol, matC); 
 
