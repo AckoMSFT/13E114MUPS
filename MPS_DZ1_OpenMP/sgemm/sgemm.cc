@@ -146,7 +146,8 @@ sgemmWorksharing(char transa, char transb, int m, int n, int k, float alpha, con
     }
 
     int mm, nn, i;
-#pragma omp parallel for private(mm, nn, i) shared(A, B, C)
+    // posmatraj petlje mm i nn kao jednu veliku petlju i ravnomerno raspodeli posao
+#pragma omp parallel for private(mm, nn, i) shared(A, B, C) collapse(2)
     for (mm = 0; mm < m; ++mm) {
         for (nn = 0; nn < n; ++nn) {
             float c = 0.0f;
