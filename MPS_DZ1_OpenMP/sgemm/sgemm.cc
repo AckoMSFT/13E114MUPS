@@ -7,83 +7,84 @@
 #include <iostream>
 #include <fstream>
 #include <omp.h>
+#include <functional>
 
-const int NUMBER_OF_THREADS = 8;
+const double ACCURACY = 0.01;
+int NUMBER_OF_THREADS = 8;
 
-bool readColMajorMatrixFile(const char *fn, int &nr_row, int &nr_col, std::vector<float>&v)
-{
-  std::cerr << "Opening file:"<< fn << std::endl;
-  std::fstream f(fn, std::fstream::in);
-  if ( !f.good() ) {
-    return false;
-  }
+bool readColMajorMatrixFile(const char *fn, int &nr_row, int &nr_col, std::vector<float> &v) {
+    std::cerr << "Opening file:" << fn << std::endl;
+    std::fstream f(fn, std::fstream::in);
+    if (!f.good()) {
+        return false;
+    }
 
-  // Read # of rows and cols
-  f >> nr_row;
-  f >> nr_col;
+    // Read # of rows and cols
+    f >> nr_row;
+    f >> nr_col;
 
-  float data;
-  std::cerr << "Matrix dimension: "<<nr_row<<"x"<<nr_col<<std::endl;
-  while (f.good() ) {
-    f >> data;
-    v.push_back(data);
-  }
-  v.pop_back(); // remove the duplicated last element
-  return true;
+    float data;
+    std::cerr << "Matrix dimension: " << nr_row << "x" << nr_col << std::endl;
+    while (f.good()) {
+        f >> data;
+        v.push_back(data);
+    }
+    v.pop_back(); // remove the duplicated last element
+    return true;
 }
 
-bool writeColMajorMatrixFile(const char *fn, int nr_row, int nr_col, std::vector<float>&v)
-{
-  std::cerr << "Opening file:"<< fn << " for write." << std::endl;
-  std::fstream f(fn, std::fstream::out);
-  if ( !f.good() ) {
-    return false;
-  }
+bool writeColMajorMatrixFile(const char *fn, int nr_row, int nr_col, std::vector<float> &v) {
+    std::cerr << "Opening file:" << fn << " for write." << std::endl;
+    std::fstream f(fn, std::fstream::out);
+    if (!f.good()) {
+        return false;
+    }
 
-  // Read # of rows and cols
-  f << nr_row << " "<<nr_col<<" ";
+    // Read # of rows and cols
+    f << nr_row << " " << nr_col << " ";
 
-  float data;
-  std::cerr << "Matrix dimension: "<<nr_row<<"x"<<nr_col<<std::endl;
-  for (int i = 0; i < v.size(); ++i) {
-    f << v[i] << ' ';
-  }
-  f << "\n";
+    std::cerr << "Matrix dimension: " << nr_row << "x" << nr_col << std::endl;
+    for (float i : v) {
+        f << i << ' ';
+    }
+    f << "\n";
 
-  return true;
+    return true;
 }
 
 /* 
  * Base C implementation of MM
  */
 
-void basicSgemm( char transa, char transb, int m, int n, int k, float alpha, const float *A, int lda, const float *B, int ldb, float beta, float *C, int ldc )
-{
-  if ((transa != 'N') && (transa != 'n')) {
-    std::cerr << "unsupported value of 'transa' in regtileSgemm()" << std::endl;
-    return;
-  }
-  
-  if ((transb != 'T') && (transb != 't')) {
-    std::cerr << "unsupported value of 'transb' in regtileSgemm()" << std::endl;
-    return;
-  }
-  
-  for (int mm = 0; mm < m; ++mm) {
-    for (int nn = 0; nn < n; ++nn) {
-      float c = 0.0f;
-      for (int i = 0; i < k; ++i) {
-        float a = A[mm + i * lda]; 
-        float b = B[nn + i * ldb];
-        c += a * b;
-      }
-      C[mm+nn*ldc] = C[mm+nn*ldc] * beta + alpha * c;
+void
+basicSgemm(char transa, char transb, int m, int n, int k, float alpha, const float *A, int lda, const float *B, int ldb,
+           float beta, float *C, int ldc) {
+    if ((transa != 'N') && (transa != 'n')) {
+        std::cerr << "unsupported value of 'transa' in regtileSgemm()" << std::endl;
+        return;
     }
-  }
+
+    if ((transb != 'T') && (transb != 't')) {
+        std::cerr << "unsupported value of 'transb' in regtileSgemm()" << std::endl;
+        return;
+    }
+
+    for (int mm = 0; mm < m; ++mm) {
+        for (int nn = 0; nn < n; ++nn) {
+            float c = 0.0f;
+            for (int i = 0; i < k; ++i) {
+                float a = A[mm + i * lda];
+                float b = B[nn + i * ldb];
+                c += a * b;
+            }
+            C[mm + nn * ldc] = C[mm + nn * ldc] * beta + alpha * c;
+        }
+    }
 }
 
-void sgemmNoWorksharing(char transa, char transb, int m, int n, int k, float alpha, const float *A, int lda, const float *B, int ldb, float beta, float *C, int ldc )
-{
+void
+sgemmNoWorksharing(char transa, char transb, int m, int n, int k, float alpha, const float *A, int lda, const float *B,
+                   int ldb, float beta, float *C, int ldc) {
     if ((transa != 'N') && (transa != 'n')) {
         std::cerr << "unsupported value of 'transa' in regtileSgemm()" << std::endl;
         return;
@@ -131,8 +132,9 @@ void sgemmNoWorksharing(char transa, char transb, int m, int n, int k, float alp
     }
 }
 
-void sgemmWorksharing(char transa, char transb, int m, int n, int k, float alpha, const float *A, int lda, const float *B, int ldb, float beta, float *C, int ldc )
-{
+void
+sgemmWorksharing(char transa, char transb, int m, int n, int k, float alpha, const float *A, int lda, const float *B,
+                 int ldb, float beta, float *C, int ldc) {
     if ((transa != 'N') && (transa != 'n')) {
         std::cerr << "unsupported value of 'transa' in regtileSgemm()" << std::endl;
         return;
@@ -144,7 +146,7 @@ void sgemmWorksharing(char transa, char transb, int m, int n, int k, float alpha
     }
 
     int mm, nn, i;
-    #pragma omp parallel for private(mm, nn, i) shared(A, B, C)
+#pragma omp parallel for private(mm, nn, i) shared(A, B, C)
     for (mm = 0; mm < m; ++mm) {
         for (nn = 0; nn < n; ++nn) {
             float c = 0.0f;
@@ -153,13 +155,13 @@ void sgemmWorksharing(char transa, char transb, int m, int n, int k, float alpha
                 float b = B[nn + i * ldb];
                 c += a * b;
             }
-            C[mm+nn*ldc] = C[mm+nn*ldc] * beta + alpha * c;
+            C[mm + nn * ldc] = C[mm + nn * ldc] * beta + alpha * c;
         }
     }
 }
 
-void sgemmTasking(char transa, char transb, int m, int n, int k, float alpha, const float *A, int lda, const float *B, int ldb, float beta, float *C, int ldc )
-{
+void sgemmTasking(char transa, char transb, int m, int n, int k, float alpha, const float *A, int lda, const float *B,
+                  int ldb, float beta, float *C, int ldc) {
     if ((transa != 'N') && (transa != 'n')) {
         std::cerr << "unsupported value of 'transa' in regtileSgemm()" << std::endl;
         return;
@@ -210,78 +212,115 @@ void sgemmTasking(char transa, char transb, int m, int n, int k, float alpha, co
     }
 }
 
-bool replace(std::string& str, const std::string& from, const std::string& to) {
+bool replace(std::string &str, const std::string &from, const std::string &to) {
     size_t start_pos = str.find(from);
-    if(start_pos == std::string::npos)
+    if (start_pos == std::string::npos) {
         return false;
+    }
     str.replace(start_pos, from.length(), to);
     return true;
 }
 
-int main (int argc, char *argv[]) {
-  omp_set_num_threads(NUMBER_OF_THREADS);
-  int matArow, matAcol;
-  int matBrow, matBcol;
-  std::vector<float> matA, matBT;
+std::function<bool(const float &, const float &)> comparator = [](const float &lhs, const float &rhs) {
+    return abs(lhs - rhs) < ACCURACY;
+};
 
-  if (argc != 4)
-  {
-      fprintf(stderr, "Expecting three input filenames\n");
-      exit(-1);
-  }
+bool validate_result(const std::vector<float> &lhs, const std::vector<float> &rhs) {
+    if (lhs.size() != rhs.size()) {
+        return false;
+    }
+    return std::equal(lhs.begin(), lhs.end(), rhs.begin(), comparator);
+}
 
-  /* Read in data */
-  // load A
-  readColMajorMatrixFile(argv[1], matArow, matAcol, matA);
+int main(int argc, char *argv[]) {
+    int matArow, matAcol;
+    int matBrow, matBcol;
+    std::vector<float> matA, matBT;
 
-  // load B^T
-  readColMajorMatrixFile(argv[2], matBcol, matBrow, matBT);
+    if (argc != 4 && argc != 5) {
+        fprintf(stderr, "Expecting three filenames or four arguments\n");
+        exit(-1);
+    }
 
-  // allocate space for C
-  std::vector<float> matC(matArow*matBcol);
+    /* Read in data */
+    // load A
+    readColMajorMatrixFile(argv[1], matArow, matAcol, matA);
 
-  double wallClock = omp_get_wtime(), timeElapsed;
-  // Use standard sgemm interface
-  basicSgemm('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f, &matC.front(), matArow);
-  timeElapsed = omp_get_wtime() - wallClock;
-  printf("serial_implementation: time_elapsed: %lf seconds\n", timeElapsed);
-  writeColMajorMatrixFile(argv[3], matArow, matBcol, matC);
+    // load B^T
+    readColMajorMatrixFile(argv[2], matBcol, matBrow, matBT);
 
-  std::string output_file = std::string(argv[3]);
+    // allocate space for C
+    std::vector<float> matC(matArow * matBcol);
 
-  std::string no_worksharing_output_file = output_file;
-  replace(no_worksharing_output_file, ".txt", "_no_worksharing.txt");
-  std::vector<float> noWorksharingC(matArow * matBcol);
+    omp_set_dynamic(false);
+    if (argc == 5) {
+        NUMBER_OF_THREADS = atoi(argv[4]);
+    }
+    omp_set_num_threads(NUMBER_OF_THREADS);
 
-  wallClock = omp_get_wtime();
-  sgemmNoWorksharing('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f, &noWorksharingC.front(), matArow);
-  timeElapsed = omp_get_wtime() - wallClock;
-  printf("no_worksharing: time_elapsed: %lf seconds\n", timeElapsed);
-  writeColMajorMatrixFile(no_worksharing_output_file.c_str(), matArow, matBcol, noWorksharingC);
+    printf("matA: %s, matB: %s, matC: %s\n", argv[1], argv[2], argv[3]);
+    printf("NUMBER_OF_THREADS: %d\n", NUMBER_OF_THREADS);
 
-  std::string worksharing_output_file = output_file;
-  replace(worksharing_output_file, ".txt", "_worksharing.txt");
-  std::vector<float> worksharingC(matArow * matBcol);
+    double wallClock = omp_get_wtime(), timeElapsed;
+    // Use standard sgemm interface
+    basicSgemm('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f,
+               &matC.front(), matArow);
+    timeElapsed = omp_get_wtime() - wallClock;
+    printf("serial_implementation: time_elapsed: %lf seconds\n", timeElapsed);
+    writeColMajorMatrixFile(argv[3], matArow, matBcol, matC);
 
-  wallClock = omp_get_wtime();
-  sgemmWorksharing('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f, &worksharingC.front(), matArow);
-  timeElapsed = omp_get_wtime() - wallClock;
-  printf("worksharing: time_elapsed: %lf seconds\n", timeElapsed);
-  writeColMajorMatrixFile(worksharing_output_file.c_str(), matArow, matBcol, worksharingC);
+    std::string output_file = std::string(argv[3]);
 
-  std::string tasking_output_file = output_file;
-  replace(tasking_output_file, ".txt", "_tasking.txt");
-  std::vector<float> taskingC(matArow * matBcol);
+    std::string no_worksharing_output_file = output_file;
+    replace(no_worksharing_output_file, ".txt", "_no_worksharing.txt");
+    std::vector<float> noWorksharingC(matArow * matBcol);
 
-  wallClock = omp_get_wtime();
-  sgemmTasking('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f, &taskingC.front(), matArow);
-  timeElapsed = omp_get_wtime() - wallClock;
-  printf("tasking: time_elapsed: %lf seconds\n", timeElapsed);
-  writeColMajorMatrixFile(tasking_output_file.c_str(), matArow, matBcol, taskingC);
+    wallClock = omp_get_wtime();
+    sgemmNoWorksharing('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f,
+                       &noWorksharingC.front(), matArow);
+    timeElapsed = omp_get_wtime() - wallClock;
+    printf("no_worksharing: time_elapsed: %lf seconds\n", timeElapsed);
+    writeColMajorMatrixFile(no_worksharing_output_file.c_str(), matArow, matBcol, noWorksharingC);
 
-  for (int i = 0; i < 1000; i++) {
-      //std::cout << matC[i] << " " << noWorksharingC[i] << " " << worksharingC[i] << " " << taskingC[i] << std::endl;
-  }
+    if (validate_result(matC, noWorksharingC)) {
+        std::cout << "Test PASSED" << std::endl;
+    } else {
+        std::cout << "Test FAILED" << std::endl;
+    }
 
-  return 0;
+    std::string worksharing_output_file = output_file;
+    replace(worksharing_output_file, ".txt", "_worksharing.txt");
+    std::vector<float> worksharingC(matArow * matBcol);
+
+    wallClock = omp_get_wtime();
+    sgemmWorksharing('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f,
+                     &worksharingC.front(), matArow);
+    timeElapsed = omp_get_wtime() - wallClock;
+    printf("worksharing: time_elapsed: %lf seconds\n", timeElapsed);
+    writeColMajorMatrixFile(worksharing_output_file.c_str(), matArow, matBcol, worksharingC);
+
+    if (validate_result(matC, worksharingC)) {
+        std::cout << "Test PASSED" << std::endl;
+    } else {
+        std::cout << "Test FAILED" << std::endl;
+    }
+
+    std::string tasking_output_file = output_file;
+    replace(tasking_output_file, ".txt", "_tasking.txt");
+    std::vector<float> taskingC(matArow * matBcol);
+
+    wallClock = omp_get_wtime();
+    sgemmTasking('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f,
+                 &taskingC.front(), matArow);
+    timeElapsed = omp_get_wtime() - wallClock;
+    printf("tasking: time_elapsed: %lf seconds\n", timeElapsed);
+    writeColMajorMatrixFile(tasking_output_file.c_str(), matArow, matBcol, taskingC);
+
+    if (validate_result(matC, taskingC)) {
+        std::cout << "Test PASSED" << std::endl;
+    } else {
+        std::cout << "Test FAILED" << std::endl;
+    }
+
+    return 0;
 }
