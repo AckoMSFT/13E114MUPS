@@ -262,12 +262,12 @@ int main(int argc, char *argv[]) {
     printf("matA: %s, matB: %s, matC: %s\n", argv[1], argv[2], argv[3]);
     printf("NUMBER_OF_THREADS: %d\n", NUMBER_OF_THREADS);
 
-    double wallClock = omp_get_wtime(), timeElapsed;
+    double wall_clock = omp_get_wtime(), time_elapsed;
     // Use standard sgemm interface
     basicSgemm('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f,
                &matC.front(), matArow);
-    timeElapsed = omp_get_wtime() - wallClock;
-    printf("serial_implementation: time_elapsed: %lf seconds\n", timeElapsed);
+    time_elapsed = omp_get_wtime() - wall_clock;
+    printf("serial_implementation: time_elapsed: %lf seconds\n", time_elapsed);
     writeColMajorMatrixFile(argv[3], matArow, matBcol, matC);
 
     std::string output_file = std::string(argv[3]);
@@ -276,11 +276,11 @@ int main(int argc, char *argv[]) {
     replace(no_worksharing_output_file, ".txt", "_no_worksharing.txt");
     std::vector<float> noWorksharingC(matArow * matBcol);
 
-    wallClock = omp_get_wtime();
+    wall_clock = omp_get_wtime();
     sgemmNoWorksharing('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f,
                        &noWorksharingC.front(), matArow);
-    timeElapsed = omp_get_wtime() - wallClock;
-    printf("no_worksharing: time_elapsed: %lf seconds\n", timeElapsed);
+    time_elapsed = omp_get_wtime() - wall_clock;
+    printf("no_worksharing: time_elapsed: %lf seconds\n", time_elapsed);
     writeColMajorMatrixFile(no_worksharing_output_file.c_str(), matArow, matBcol, noWorksharingC);
 
     if (validate_result(matC, noWorksharingC)) {
@@ -293,11 +293,11 @@ int main(int argc, char *argv[]) {
     replace(worksharing_output_file, ".txt", "_worksharing.txt");
     std::vector<float> worksharingC(matArow * matBcol);
 
-    wallClock = omp_get_wtime();
+    wall_clock = omp_get_wtime();
     sgemmWorksharing('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f,
                      &worksharingC.front(), matArow);
-    timeElapsed = omp_get_wtime() - wallClock;
-    printf("worksharing: time_elapsed: %lf seconds\n", timeElapsed);
+    time_elapsed = omp_get_wtime() - wall_clock;
+    printf("worksharing: time_elapsed: %lf seconds\n", time_elapsed);
     writeColMajorMatrixFile(worksharing_output_file.c_str(), matArow, matBcol, worksharingC);
 
     if (validate_result(matC, worksharingC)) {
@@ -310,11 +310,11 @@ int main(int argc, char *argv[]) {
     replace(tasking_output_file, ".txt", "_tasking.txt");
     std::vector<float> taskingC(matArow * matBcol);
 
-    wallClock = omp_get_wtime();
+    wall_clock = omp_get_wtime();
     sgemmTasking('N', 'T', matArow, matBcol, matAcol, 1.0f, &matA.front(), matArow, &matBT.front(), matBcol, 0.0f,
                  &taskingC.front(), matArow);
-    timeElapsed = omp_get_wtime() - wallClock;
-    printf("tasking: time_elapsed: %lf seconds\n", timeElapsed);
+    time_elapsed = omp_get_wtime() - wall_clock;
+    printf("tasking: time_elapsed: %lf seconds\n", time_elapsed);
     writeColMajorMatrixFile(tasking_output_file.c_str(), matArow, matBcol, taskingC);
 
     if (validate_result(matC, taskingC)) {
