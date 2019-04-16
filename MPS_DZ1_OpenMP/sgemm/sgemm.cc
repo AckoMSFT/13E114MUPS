@@ -170,17 +170,42 @@ void sgemmTasking(char transa, char transb, int m, int n, int k, float alpha, co
         return;
     }
 
-    int mm, nn, i;
-#pragma omp parallel for private(mm, nn, i) shared(A, B, C)
-    for (mm = 0; mm < m; ++mm) {
-        for (nn = 0; nn < n; ++nn) {
-            float c = 0.0f;
-            for (i = 0; i < k; ++i) {
-                float a = A[mm + i * lda];
-                float b = B[nn + i * ldb];
-                c += a * b;
+    int element_count = m * n;
+    int div = element_count / NUMBER_OF_THREADS;
+    int mod = element_count % NUMBER_OF_THREADS;
+
+    // m je matArow
+    // n je matBCol
+    // k je zajednicko matACol matBRow
+    // matricaB je transponovana
+    // rezultat je oblika m x n
+
+    //printf("element_count: %d\n", element_count);
+    int thread_id;
+#pragma omp parallel private(thread_id) num_threads(NUMBER_OF_THREADS)
+    {
+        thread_id = omp_get_thread_num();
+        int lower_bound = div * thread_id + mod, upper_bound = lower_bound + div;
+        if (thread_id == 0) {
+            lower_bound -= mod;
+        }
+        //printf("thread_id: %d lower_bound: %d upper_bound: %d: \n", thread_id, lower_bound, upper_bound);
+        //printf("lda: %d, ldb: %d, ldc: %d\n", lda, ldb, ldc);
+        for (int i = lower_bound; i < upper_bound; i++) {
+#pragma omp task
+            {
+                float element = 0.0f;
+                int offset_b = i / ldc, offset_a = i % ldc;
+                // C[i][j] = sum { A[i][k] * B[k][j] }
+                // A je dimenzija m x k
+                // B je dimenzija k x n
+                for (int offset_c = 0; offset_c < k; offset_c++) {
+                    int idxA = offset_a + offset_c * lda;
+                    int idxB = offset_b + offset_c * ldb;
+                    element += A[idxA] * B[idxB];
+                }
+                C[i] = C[i] * beta + alpha * element;
             }
-            C[mm+nn*ldc] = C[mm+nn*ldc] * beta + alpha * c;
         }
     }
 }
