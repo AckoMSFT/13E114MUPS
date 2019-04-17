@@ -8,7 +8,7 @@
 
 #include "kmeans.h"
 
-/*---< cluster() >-----------------------------------------------------------*/
+/*---< openmp_cluster() >-----------------------------------------------------------*/
 int openmp_cluster(int numObjects,      /* number of input objects */
                    int numAttributes,   /* size of attribute of each object */
                    float **attributes,      /* [numObjects][numAttributes] */

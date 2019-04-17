@@ -19,7 +19,8 @@ void usage(char *argv0) {
             "       -i filename     :  file containing data to be clustered\n"
             "       -b                 :input file is in binary format\n"
             "       -k                 : number of clusters (default is 8) \n"
-            "       -t threshold    : threshold value\n";
+            "       -t threshold    : threshold value\n"
+            "       -c thread count : number of threads (default is 8)\n";
     fprintf(stderr, help, argv0);
     exit(-1);
 }
@@ -44,8 +45,9 @@ int main(int argc, char **argv) {
     float threshold = 0.001;
     double timing;
 
+    int NUMBER_OF_THREADS = 8;
 
-    while ((opt = getopt(argc, argv, "i:k:t:b")) != EOF) {
+    while ((opt = getopt(argc, argv, "i:k:t:b:c")) != EOF) {
         switch (opt) {
             case 'i':
                 filename = optarg;
@@ -59,6 +61,8 @@ int main(int argc, char **argv) {
             case 'k':
                 nclusters = atoi(optarg);
                 break;
+            case 'c':
+                NUMBER_OF_THREADS = atoi(optarg);
             case '?':
                 usage(argv[0]);
                 break;
@@ -69,6 +73,11 @@ int main(int argc, char **argv) {
     }
 
     if (filename == 0) usage(argv[0]);
+
+    omp_set_dynamic(false);
+    omp_set_num_threads(NUMBER_OF_THREADS);
+
+    printf("NUMBER_OF_THREADS: %d\n", NUMBER_OF_THREADS);
 
     numAttributes = numObjects = 0;
 

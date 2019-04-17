@@ -32,7 +32,7 @@ int openmp_find_nearest_point(float *pt,          /* [nfeatures] */
     return (index);
 }
 
-/*----< euclid_dist_2() >----------------------------------------------------*/
+/*----< openmp_euclid_dist_2() >----------------------------------------------------*/
 /* multi-dimensional spatial Euclid distance square */
 __inline
 float openmp_euclid_dist_2(float *pt1,
