@@ -48,13 +48,13 @@ float euclid_dist_2(float *pt1,
 }
 
 
-/*----< kmeans_clustering() >---------------------------------------------*/
-float **kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
-                          int nfeatures,
-                          int npoints,
-                          int nclusters,
-                          float threshold,
-                          int *membership) /* out: [npoints] */
+/*----< openmp_kmeans_clustering() >---------------------------------------------*/
+float **openmp_kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
+                                 int nfeatures,
+                                 int npoints,
+                                 int nclusters,
+                                 float threshold,
+                                 int *membership) /* out: [npoints] */
 {
 
     int i, j, n = 0, index, loop = 0;
@@ -130,4 +130,3 @@ float **kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
 
     return clusters;
 }
-

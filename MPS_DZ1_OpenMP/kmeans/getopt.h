@@ -22,9 +22,9 @@
    to the Free Software Foundation, Inc., 59 Temple Place,
    Suite 330, Boston, MA 02111-1307 USA.  */
 
-  
 
-  
+
+
 
 #ifndef _GETOPT_H
 
@@ -40,7 +40,9 @@
    if it's from glibc.  (Why ctype.h?  It's guaranteed to exist and it
    doesn't flood the namespace with stuff the way some other headers do.)  */
 #if !defined __GNU_LIBRARY__
+
 # include <ctype.h>
+
 #endif
 
 #ifdef  __cplusplus
@@ -100,18 +102,17 @@ extern int optopt;
    one).  For long options that have a zero `flag' field, `getopt'
    returns the contents of the `val' field.  */
 
-struct option
-{
+struct option {
 # if (defined __STDC__ && __STDC__) || defined __cplusplus
-  const char *name;
+    const char *name;
 # else
-  char *name;
+    char *name;
 # endif
-  /* has_arg can't be an enum because some compilers complain about
-     type mismatches in all the code that assumes it is an int.  */
-  int has_arg;
-  int *flag;
-  int val;
+    /* has_arg can't be an enum because some compilers complain about
+       type mismatches in all the code that assumes it is an int.  */
+    int has_arg;
+    int *flag;
+    int val;
 };
 
 /* Names for the values of the `has_arg' field of `struct option'.  */
@@ -171,12 +172,17 @@ extern int _getopt_internal (int ___argc, char *const *___argv,
                              int __long_only);
 # endif
 #else /* not __STDC__ */
-extern int getopt ();
-# ifndef __need_getopt
-extern int getopt_long ();
-extern int getopt_long_only ();
 
-extern int _getopt_internal ();
+extern int getopt();
+
+# ifndef __need_getopt
+
+extern int getopt_long();
+
+extern int getopt_long_only();
+
+extern int _getopt_internal();
+
 # endif
 #endif /* __STDC__ */
 
