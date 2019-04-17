@@ -21,12 +21,26 @@ int openmp_find_nearest_point(float *pt,          /* [nfeatures] */
     float min_dist = FLT_MAX;
 
     /* find the cluster center id with min distance to pt */
-    for (i = 0; i < npts; i++) {
-        float dist;
-        dist = openmp_euclid_dist_2(pt, pts[i], nfeatures);  /* no need square root */
-        if (dist < min_dist) {
-            min_dist = dist;
-            index = i;
+    // trying to optimize this actually slows down the code a lot...
+    //#pragma omp parallel
+    {
+        int thread_local_index = index;
+        float thread_local_min_dist = min_dist;
+        //#pragma omp for nowait
+        for (int i = 0; i < npts; i++) {
+            float dist;
+            dist = euclid_dist_2(pt, pts[i], nfeatures);  /* no need square root */
+            if (dist < thread_local_min_dist) {
+                thread_local_min_dist = dist;
+                thread_local_index = i;
+            }
+        }
+        //#pragma omp critical
+        {
+            if (thread_local_min_dist < min_dist) {
+                min_dist = thread_local_min_dist;
+                index = thread_local_index;
+            }
         }
     }
     return (index);
@@ -41,6 +55,7 @@ float openmp_euclid_dist_2(float *pt1,
     int i;
     float ans = 0.0;
 
+    #pragma omp parallel for reduction(+:ans)
     for (i = 0; i < numdims; i++)
         ans += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
 
