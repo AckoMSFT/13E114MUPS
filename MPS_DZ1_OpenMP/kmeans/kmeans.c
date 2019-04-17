@@ -10,6 +10,8 @@
 
 #include "kmeans.h"
 
+const double ACCURACY = 0.01;
+
 extern double wtime(void);
 
 /*---< usage() >------------------------------------------------------------*/
@@ -159,6 +161,15 @@ int main(int argc, char **argv) {
     }
     timing = omp_get_wtime() - timing;
 
+    float **result;
+    result = (float **) malloc(nclusters * sizeof(float *));
+    result[0] = (float *) malloc(nclusters * numAttributes * sizeof(float));
+    for (i = 0; i < nclusters; i++) {
+        for (int j = 0; j < numAttributes; j++) {
+            result[i][j] = cluster_centres[i][j];
+        }
+    }
+
     printf("number of Clusters %d\n", nclusters);
     printf("number of Attributes %d\n\n", numAttributes);
     /*printf("Cluster Centers Output\n"); 
@@ -171,7 +182,7 @@ int main(int argc, char **argv) {
             printf("%f ", cluster_centres[i][j]);
         printf("\n\n");
     }*/
-    printf("Time for process: %f\n", timing);
+    printf("Time for serial processing: %f\n", timing);
 
     timing = omp_get_wtime();
     for (i = 0; i < nloops; i++) {
@@ -188,7 +199,21 @@ int main(int argc, char **argv) {
 
     printf("number of Clusters %d\n", nclusters);
     printf("number of Attributes %d\n\n", numAttributes);
-    printf("Time for OpenMP process: %f\n", timing);
+    printf("Time for OpenMP processing: %f\n", timing);
+
+    int test_passed = 1;
+    for (i = 0; i < nclusters; i++) {
+        for (j = 0; j < numAttributes; j++) {
+            if (fabs(result[i][j] - cluster_centres[i][j]) >= ACCURACY) {
+                test_passed = 0;
+            }
+        }
+    }
+    if (test_passed == 1) {
+        puts("\nTest PASSED\n");
+    } else {
+        puts("\nTest FAILED\n");
+    }
 
     free(attributes);
     free(cluster_centres[0]);
