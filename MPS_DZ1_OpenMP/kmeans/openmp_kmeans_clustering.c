@@ -13,17 +13,17 @@
 
 extern double wtime(void);
 
-int find_nearest_point(float *pt,          /* [nfeatures] */
-                       int nfeatures,
-                       float **pts,         /* [npts][nfeatures] */
-                       int npts) {
+int openmp_find_nearest_point(float *pt,          /* [nfeatures] */
+                              int nfeatures,
+                              float **pts,         /* [npts][nfeatures] */
+                              int npts) {
     int index, i;
     float min_dist = FLT_MAX;
 
     /* find the cluster center id with min distance to pt */
     for (i = 0; i < npts; i++) {
         float dist;
-        dist = euclid_dist_2(pt, pts[i], nfeatures);  /* no need square root */
+        dist = openmp_euclid_dist_2(pt, pts[i], nfeatures);  /* no need square root */
         if (dist < min_dist) {
             min_dist = dist;
             index = i;
@@ -35,9 +35,9 @@ int find_nearest_point(float *pt,          /* [nfeatures] */
 /*----< euclid_dist_2() >----------------------------------------------------*/
 /* multi-dimensional spatial Euclid distance square */
 __inline
-float euclid_dist_2(float *pt1,
-                    float *pt2,
-                    int numdims) {
+float openmp_euclid_dist_2(float *pt1,
+                           float *pt2,
+                           int numdims) {
     int i;
     float ans = 0.0;
 
@@ -96,7 +96,7 @@ float **openmp_kmeans_clustering(float **feature,    /* in: [npoints][nfeatures]
 
         for (i = 0; i < npoints; i++) {
             /* find the index of nestest cluster centers */
-            index = find_nearest_point(feature[i], nfeatures, clusters, nclusters);
+            index = openmp_find_nearest_point(feature[i], nfeatures, clusters, nclusters);
             /* if membership changes, increase delta by 1 */
             if (membership[i] != index) delta += 1.0;
 

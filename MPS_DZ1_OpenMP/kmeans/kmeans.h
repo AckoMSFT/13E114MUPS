@@ -57,6 +57,10 @@ float **openmp_kmeans_clustering(float **, int, int, int, float, int *);
 
 float euclid_dist_2(float *, float *, int);
 
+float openmp_euclid_dist_2(float *, float *, int);
+
 int find_nearest_point(float *, int, float **, int);
+
+int openmp_find_nearest_point(float *, int, float **, int);
 
 #endif
