@@ -1,4 +1,16 @@
-./jacobi 5000 500
-./jacobi 10000 1000
-./jacobi 50000 5000
-./jacobi 100000 10000
+./jacobi 5000 500 1
+./jacobi 10000 1000 1
+./jacobi 50000 5000 1
+./jacobi 100000 10000 1
+./jacobi 5000 500 2
+./jacobi 10000 1000 2
+./jacobi 50000 5000 2
+./jacobi 100000 10000 2
+./jacobi 5000 500 4
+./jacobi 10000 1000 4
+./jacobi 50000 5000 4
+./jacobi 100000 10000 4
+./jacobi 5000 500 8
+./jacobi 10000 1000 8
+./jacobi 50000 5000 8
+./jacobi 100000 10000 8
