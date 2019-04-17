@@ -93,6 +93,7 @@ float **openmp_kmeans_clustering(float **feature,    /* in: [npoints][nfeatures]
         n++;
     }
 
+    #pragma omp parallel for
     for (i = 0; i < npoints; i++)
         membership[i] = -1;
 
@@ -106,36 +107,43 @@ float **openmp_kmeans_clustering(float **feature,    /* in: [npoints][nfeatures]
 
 
     do {
+        #pragma omp parallel default(none) private(i, j, index) shared(clusters, nclusters, membership, feature, new_centers, new_centers_len, delta, nfeatures, npoints)
+        {
+            delta = 0.0f;
 
-        delta = 0.0;
+            #pragma omp for reduction(+:delta)
+            for (i = 0; i < npoints; i++) {
+                /* find the index of nestest cluster centers */
+                index = openmp_find_nearest_point(feature[i], nfeatures, clusters, nclusters);
+                /* if membership changes, increase delta by 1 */
+                if (membership[i] != index) delta += 1.0;
 
-        for (i = 0; i < npoints; i++) {
-            /* find the index of nestest cluster centers */
-            index = openmp_find_nearest_point(feature[i], nfeatures, clusters, nclusters);
-            /* if membership changes, increase delta by 1 */
-            if (membership[i] != index) delta += 1.0;
+                /* assign the membership to object i */
+                membership[i] = index;
 
-            /* assign the membership to object i */
-            membership[i] = index;
-
-            /* update new cluster centers : sum of objects located within */
-            new_centers_len[index]++;
-            for (j = 0; j < nfeatures; j++)
-                new_centers[index][j] += feature[i][j];
-        }
-
-
-        /* replace old cluster centers with new_centers */
-        for (i = 0; i < nclusters; i++) {
-            for (j = 0; j < nfeatures; j++) {
-                if (new_centers_len[i] > 0)
-                    clusters[i][j] = new_centers[i][j] / new_centers_len[i];
-                new_centers[i][j] = 0.0;   /* set back to 0 */
+                #pragma omp critical
+                {
+                    /* update new cluster centers : sum of objects located within */
+                    new_centers_len[index]++;
+                    for (j = 0; j < nfeatures; j++)
+                        new_centers[index][j] += feature[i][j];
+                }
             }
-            new_centers_len[i] = 0;   /* set back to 0 */
-        }
 
-        //delta /= npoints;
+
+            /* replace old cluster centers with new_centers */
+            #pragma omp for collapse(2)
+            for (i = 0; i < nclusters; i++) {
+                for (j = 0; j < nfeatures; j++) {
+                    if (new_centers_len[i] > 0)
+                        clusters[i][j] = new_centers[i][j] / new_centers_len[i];
+                    new_centers[i][j] = 0.0;   /* set back to 0 */
+                }
+                new_centers_len[i] = 0;   /* set back to 0 */
+            }
+
+            //delta /= npoints;
+        }
     } while (delta > threshold);
 
 
