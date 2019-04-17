@@ -139,7 +139,13 @@ float **openmp_kmeans_clustering(float **feature,    /* in: [npoints][nfeatures]
                         clusters[i][j] = new_centers[i][j] / new_centers_len[i];
                     new_centers[i][j] = 0.0;   /* set back to 0 */
                 }
-                new_centers_len[i] = 0;   /* set back to 0 */
+                // need to move out: collapsed loops not perfectly nested before 'new_centers_len'
+                // new_centers_len[i] = 0;   /* set back to 0 */
+            }
+
+            #pragma omp for
+            for (i = 0; i < nclusters; i++) {
+                new_centers_len[i] = 0;
             }
 
             //delta /= npoints;
