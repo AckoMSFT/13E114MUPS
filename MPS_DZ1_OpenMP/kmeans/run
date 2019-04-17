@@ -1,4 +1,16 @@
+./kmeans -i data/100 -c 1
+./kmeans -i data/kdd_cup -c 1
+./kmeans -i data/204800.txt -c 1
+./kmeans -i data/819200.txt -c 1
+./kmeans -i data/100 -c 2
+./kmeans -i data/kdd_cup -c 2
+./kmeans -i data/204800.txt -c 2
+./kmeans -i data/819200.txt -c 2
 ./kmeans -i data/100 -c 4
-./kmeans -i data/kdd_cup
-./kmeans -i data/204800.txt
-./kmeans -i data/819200.txt
+./kmeans -i data/kdd_cup -c 4
+./kmeans -i data/204800.txt -c 4
+./kmeans -i data/819200.txt -c 4
+./kmeans -i data/100 -c 8
+./kmeans -i data/kdd_cup -c 8
+./kmeans -i data/204800.txt -c 8
+./kmeans -i data/819200.txt -c 8
