@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
     int NUMBER_OF_THREADS = 8;
 
-    while ((opt = getopt(argc, argv, "i:k:t:b:c")) != EOF) {
+    while ((opt = getopt(argc, argv, "i:k:t:b:c:")) != EOF) {
         switch (opt) {
             case 'i':
                 filename = optarg;
@@ -63,6 +63,7 @@ int main(int argc, char **argv) {
                 break;
             case 'c':
                 NUMBER_OF_THREADS = atoi(optarg);
+                break;
             case '?':
                 usage(argv[0]);
                 break;
@@ -74,7 +75,7 @@ int main(int argc, char **argv) {
 
     if (filename == 0) usage(argv[0]);
 
-    omp_set_dynamic(false);
+    omp_set_dynamic(0);
     omp_set_num_threads(NUMBER_OF_THREADS);
 
     printf("NUMBER_OF_THREADS: %d\n", NUMBER_OF_THREADS);
